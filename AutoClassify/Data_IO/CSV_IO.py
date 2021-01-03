@@ -1,11 +1,13 @@
 import sys
 import math
-import torch
 import argparse
 import collections
 import numpy as np
 import scanpy as sc
 import pandas as pd
+
+import torch
+from keras.utils import to_categorical
 from torch.utils.data import DataLoader
 
 # Make types to labels dictionary
@@ -27,6 +29,12 @@ def convert_type_to_label(types, type_to_label_dict):
     for type in types:
         labels.append(type_to_label_dict[type])
     return labels
+
+# Turn labels into matrix
+def one_hot_matrix(labels):
+    # input -- labels (a list or numpy array)
+    # output -- one hot matrix with shape (numpy ndarray )
+    return to_categorical(labels)
 
 # Get common genes, normalize  and scale the sets
 def scale_sets(sets):
@@ -72,7 +80,8 @@ def CSV_IO(train_path, train_labels_path, test_path, batchSize=128, workers = 12
     print("    -> Cell types in training set:", type_to_label_dict)
     print("    -> # trainng cells:", train_label.shape[0])
     train_label = convert_type_to_label(train_label.iloc[:,1], type_to_label_dict)
-
+    train_label = one_hot_matrix(train_label)
+    
     # we want to get Cells X Genes
     train_set = np.transpose(train_set)
     test_set = np.transpose(test_set)
@@ -94,4 +103,4 @@ def CSV_IO(train_path, train_labels_path, test_path, batchSize=128, workers = 12
     #        batch_sampler=None, num_workers=workers, collate_fn=None,
     #        pin_memory=True)
 
-    return train_data_loader
+    return train_data_loader, train_label

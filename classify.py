@@ -33,15 +33,11 @@ from tensorboardX import SummaryWriter
 # anamoly detection
 torch.autograd.set_detect_anomaly(True)
 
-# lr = 0.0002
-lr = 0.0002
-
-
 parser = argparse.ArgumentParser()
 
 # classifier options
 parser.add_argument('--ClassifierOnly', type=bool, default=False, help='running the classifer only, default = False')
-parser.add_argument('--ClassifierEpochs', type=int, default=50, help='number of epochs to train the classifier, default = 50')
+parser.add_argument('--ClassifierEpochs', type=int, default=100, help='number of epochs to train the classifier, default = 50')
 
 parser.add_argument("--hdim", type=int, default=128, help="dim of the latent code, Default=128")
 parser.add_argument("--save_iter", type=int, default=1, help="Default=1")
@@ -51,7 +47,7 @@ parser.add_argument('--batchSize', type=int, default=128, help='input batch size
 
 parser.add_argument("--nEpochs", type=int, default=200, help="number of training epochs, default = 200 ")
 parser.add_argument("--start_epoch", default=1, type=int, help="Manual epoch number (useful on restarts)")
-parser.add_argument('--lr', type=float, default=lr, help='learning rate, default=0.0002')
+parser.add_argument('--lr', type=float, default=0.0001, help='learning rate, default=0.0002')
 parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
 parser.add_argument("--momentum", default=0.9, type=float, help="Momentum, Default: 0.9")
 parser.add_argument('--clip', type=float, default=100, help='the threshod for clipping gradient')
@@ -85,20 +81,38 @@ def main():
     
     
     """
+    """ 
     ## FOR NOW WE WILL MANUALLY PICK WHICH OPTIONS WE WANT FOR IO
     
     print("==> Reading in Data")
-#     # if we have h5ad from a scanpy or seurat object 
-#     train_data_loader, valid_data_loader = Scanpy_IO('/home/jovyan/68K_PBMC_scGAN_Process/raw_68kPBMCs.h5ad',
-#                                                     batchSize=opt.batchSize, 
-#                                                     workers = opt.workers)
-#         # get the input size
-#     inp_size = [batch[0].shape[1] for _, batch in enumerate(valid_data_loader, 0)][0];
     
-    # if we have CSV turned to h5 (pandas dataframe)
-    train_set, test_set = CSV_IO("/home/jovyan/ACTINN/train.h5","/home/jovyan/ACTINN/train_lab.csv", "/home/jovyan/ACTINN/test.h5")
+    # if we have h5ad from a scanpy or seurat object 
+    train_data_loader, valid_data_loader = Scanpy_IO('/home/ubuntu/scGAN_ProcessedData/raw_68kPBMCs.h5ad',
+                                                    batchSize=opt.batchSize, 
+                                                    workers = opt.workers)
+    
+    # get input output information for the network
+    inp_size = [batch[0].shape[1] for _, batch in enumerate(valid_data_loader, 0)][0];
+    number_of_classes = 11
+    
+    """
+    
 
-    sys.exit("COMPLETED READING")
+    # if we have CSV turned to h5 (pandas dataframe)
+    train_path = "/home/ubuntu/SCRealVAE_68K/ACTINN_Data/68K_h5/train.h5"
+    train_lab_path = "/home/ubuntu/SCRealVAE_68K/ACTINN_Data/68K_h5/train_lab.csv"
+    
+    test_path= "/home/ubuntu/SCRealVAE_68K/ACTINN_Data/68K_h5/test.h5"
+    
+    train_data_loader, train_labels = CSV_IO(train_path, train_lab_path, test_path,
+                                            batchSize=opt.batchSize,
+                                            workers = opt.workers)
+    
+    # get input output information for the network
+    inp_size = [batch[0].shape[1] for _, batch in enumerate(train_data_loader, 0)][0];
+    number_of_classes = len(train_labels[0])
+    print(number_of_classes)
+    
     
     if opt.tensorboard:
         from tensorboardX import SummaryWriter
@@ -113,9 +127,16 @@ def main():
     Building the classifier model:
     
     """
-    cf_model = Classifier(output_dim = 11, input_size = inp_size).cuda()
-    cf_criterion = torch.nn.CrossEntropyLoss()
-    cf_optimizer = torch.optim.Adam(params=cf_model.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.005, amsgrad=False)
+    cf_model = Classifier(output_dim = number_of_classes, input_size = inp_size).cuda()
+#     cf_criterion = torch.nn.CrossEntropyLoss()
+
+    cf_criterion = torch.nn.BCEWithLogitsLoss()
+    cf_optimizer = torch.optim.Adam(params=cf_model.parameters(), 
+                                    lr=0.001, 
+                                    betas=(0.9, 0.999), 
+                                    eps=1e-08, 
+                                    weight_decay=0.005, 
+                                    amsgrad=False)
     cf_decayRate = 0.95
     cf_lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=cf_optimizer, gamma=cf_decayRate)
     print("\n Classifier Model \n")
@@ -129,6 +150,7 @@ def main():
     
     def train_classifier(cf_epoch, iteration, batch, cur_iter):  
         
+        cf_optimizer.zero_grad()      
         if len(batch[0].size()) == 3:
             batch = batch[0].unsqueeze(0)
         else:
@@ -145,13 +167,14 @@ def main():
             
         # =========== Update the classifier ================                  
         pred_cluster = cf_model(features) 
-        
         loss = cf_criterion(pred_cluster.squeeze(), true_labels)
-        cf_optimizer.zero_grad()      
-        loss.backward()                   
-        cf_lr_scheduler.step() 
+        loss.backward()  
+        cf_optimizer.step()
+        
+        if cur_iter % 1000 == 0:
+            cf_lr_scheduler.step() 
      
-        info += f'Cross Entropy Loss: {loss.data.item():.4f} '     
+        info += f'Loss: {loss.data.item():.4f} '     
         print(info)
         
         
@@ -159,16 +182,19 @@ def main():
     # TRAIN     
     for epoch in range(0, opt.ClassifierEpochs + 1): 
         #save models
-        if epoch % 5 == 1 and epoch != 0:
+        if epoch % 5 == 0 and epoch != 0:
             save_epoch = (epoch//opt.save_iter)*opt.save_iter   
             save_checkpoint_classifier(cf_model, save_epoch, 0, '')
 
         cf_model.train()
-    for iteration, batch in enumerate(train_data_loader, 0):
-            #--------------train Classifier Only------------
-            train_classifier(epoch, iteration, batch, cur_iter);
-            cur_iter += 1
-        
+        for iteration, batch in enumerate(train_data_loader, 0):
+                #--------------train Classifier Only------------
+                train_classifier(epoch, iteration, batch, cur_iter);
+                cur_iter += 1
+                
+    save_epoch = (epoch//opt.save_iter)*opt.save_iter    
+    
+    save_checkpoint_classifier(cf_model, save_epoch, 0, 'LAST')
     print(f"TOTAL TRAINING TIME {time.time() - start_time}"); 
         
     
