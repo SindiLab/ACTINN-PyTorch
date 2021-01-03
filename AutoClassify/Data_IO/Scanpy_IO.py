@@ -1,20 +1,10 @@
 import torch
 import numpy as np
 import scanpy as sc
-
-from keras.utils import to_categorical
 from torch.utils.data import DataLoader
 
-
-# Turn labels into matrix
-def one_hot_matrix(labels):
-    # input -- labels (a list or numpy array)
-    # output -- one hot matrix with shape (numpy ndarray )
-    return to_categorical(labels)
-
-
 def Scanpy_IO(file_path, batchSize=128, workers = 12):
-    print("==> Reading Scanpy/Seurat object")
+    print("==> Reading in Scanpy/Seurat AnnData")
     adata = sc.read(file_path);
 
     print("    ->Splitting Train and Validation Data")
@@ -27,9 +17,6 @@ def Scanpy_IO(file_path, batchSize=128, workers = 12):
     print("==> Using cluster info for generating train and validation labels")
     y_train = [int(x) for x in train_adata.obs['cluster'].to_list()]
     y_valid = [int(x) for x in valid_adata.obs['cluster'].to_list()]
-    
-    y_train_hot = one_hot_matrix(y_train)
-    y_valid_hot = one_hot_matrix(y_valid)
 
     print("==> Checking if we have sparse matrix into dense")
     try:
@@ -41,22 +28,24 @@ def Scanpy_IO(file_path, batchSize=128, workers = 12):
         norm_count_valid = np.asarray(valid_adata.X);
 
     train_data = torch.torch.from_numpy(norm_count_train);
-#     train_data = torch.log(1 + train_data)
     valid_data = torch.torch.from_numpy(norm_count_valid);
+
+# in case we want to log-scale the data 
+#     train_data = torch.log(1 + train_data)
 #     valid_data = torch.log(1 + valid_data)
 
     data_and_labels = []
     validation_data_and_labels = [];
     for i in range(len(train_data)):
-        data_and_labels.append([norm_count_train[i], y_train_hot[i]])
+        data_and_labels.append([norm_count_train[i], y_train[i]])
         # since validation will always be less than equal to train size
         try:
-            validation_data_and_labels.append([norm_count_valid[i], y_valid_hot[i]])
+            validation_data_and_labels.append([norm_count_valid[i], y_valid[i]])
         except:
             pass;
 
-    print(f"==> sample of the training data: {train_data}");
-    print(f"==> sample of the validation data: {valid_data}");
+#     print(f"==> sample of the training data: {train_data}");
+#     print(f"==> sample of the validation data: {valid_data}");
 
     inp_size = train_data.shape[1];
 

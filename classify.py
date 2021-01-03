@@ -37,23 +37,25 @@ parser = argparse.ArgumentParser()
 
 # classifier options
 parser.add_argument('--ClassifierOnly', type=bool, default=False, help='running the classifer only, default = False')
-parser.add_argument('--ClassifierEpochs', type=int, default=100, help='number of epochs to train the classifier, default = 50')
+parser.add_argument('--ClassifierEpochs', type=int, default=10, help='number of epochs to train the classifier, default = 50')
 
+parser.add_argument('--data_type', type=str, default="scanpy", help='type of train/test data, default="scanpy"')
 parser.add_argument("--hdim", type=int, default=128, help="dim of the latent code, Default=128")
 parser.add_argument("--save_iter", type=int, default=1, help="Default=1")
 parser.add_argument("--test_iter", type=int, default=1000, help="Default=1000")
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=24)
 parser.add_argument('--batchSize', type=int, default=128, help='input batch size')
 
-parser.add_argument("--nEpochs", type=int, default=200, help="number of training epochs, default = 200 ")
 parser.add_argument("--start_epoch", default=1, type=int, help="Manual epoch number (useful on restarts)")
-parser.add_argument('--lr', type=float, default=0.0001, help='learning rate, default=0.0002')
+parser.add_argument('--print_frequency', type=int, default=5, help='frequency of training stats printing, default=5')
+
+parser.add_argument('--lr', type=float, default=0.0001, help='learning rate, default=0.0001')
 parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
 parser.add_argument("--momentum", default=0.9, type=float, help="Momentum, Default: 0.9")
 parser.add_argument('--clip', type=float, default=100, help='the threshod for clipping gradient')
-parser.add_argument("--step", type=int, default=500, help="Sets the learning rate to the initial LR decayed by momentum every n epochs, Default: n=500")
-parser.add_argument('--cuda', default = True ,action='store_true', help='enables cuda')
-parser.add_argument('--manualSeed', type=int, help='manual seed')
+parser.add_argument("--step", type=int, default=1000, help="Sets the learning rate to the initial LR decayed by momentum every n epochs, Default: n=1000")
+parser.add_argument('--cuda', default = True ,action='store_true', help='enables cuda, default = True')
+parser.add_argument('--manualSeed', type=int, default = 0, help='manual seed, default = 0')
 parser.add_argument('--tensorboard', default=True ,action='store_true', help='enables tensorboard, default True')
 parser.add_argument('--outf', default='./TensorBoard/', help='folder to output training stats for tensorboard')
 parser.add_argument("--pretrained", default="", type=str, help="path to pretrained model (default: none)")
@@ -81,37 +83,38 @@ def main():
     
     
     """
-    """ 
-    ## FOR NOW WE WILL MANUALLY PICK WHICH OPTIONS WE WANT FOR IO
-    
-    print("==> Reading in Data")
-    
-    # if we have h5ad from a scanpy or seurat object 
-    train_data_loader, valid_data_loader = Scanpy_IO('/home/ubuntu/scGAN_ProcessedData/raw_68kPBMCs.h5ad',
-                                                    batchSize=opt.batchSize, 
-                                                    workers = opt.workers)
-    
-    # get input output information for the network
-    inp_size = [batch[0].shape[1] for _, batch in enumerate(valid_data_loader, 0)][0];
-    number_of_classes = 11
-    
-    """
-    
 
-    # if we have CSV turned to h5 (pandas dataframe)
-    train_path = "/home/ubuntu/SCRealVAE_68K/ACTINN_Data/68K_h5/train.h5"
-    train_lab_path = "/home/ubuntu/SCRealVAE_68K/ACTINN_Data/68K_h5/train_lab.csv"
+    if opt.data_type.lower() == "scanpy":
+        # if we have h5ad from a scanpy or seurat object 
+        train_data_loader, valid_data_loader = Scanpy_IO('/home/ubuntu/scGAN_ProcessedData/raw_68kPBMCs.h5ad',
+                                                        batchSize=opt.batchSize, 
+                                                        workers = opt.workers)
+
+        # get input output information for the network
+        inp_size = [batch[0].shape[1] for _, batch in enumerate(valid_data_loader, 0)][0];
+        labs = [batch[1] for _, batch in enumerate(valid_data_loader, 0)][0];
+        number_of_classes = len(set(labs))
+        print(f"==> Number of classes {number_of_classes}")
     
-    test_path= "/home/ubuntu/SCRealVAE_68K/ACTINN_Data/68K_h5/test.h5"
-    
-    train_data_loader, train_labels = CSV_IO(train_path, train_lab_path, test_path,
-                                            batchSize=opt.batchSize,
-                                            workers = opt.workers)
-    
-    # get input output information for the network
-    inp_size = [batch[0].shape[1] for _, batch in enumerate(train_data_loader, 0)][0];
-    number_of_classes = len(train_labels[0])
-    print(number_of_classes)
+    elif opt.data_type.lower() == "csv":
+        # if we have CSV turned to h5 (pandas dataframe)
+        train_path = "/home/ubuntu/SCRealVAE_68K/ACTINN_Data/68K_h5/train.h5"
+        train_lab_path = "/home/ubuntu/SCRealVAE_68K/ACTINN_Data/68K_h5/train_lab.csv"
+
+        test_path= "/home/ubuntu/SCRealVAE_68K/ACTINN_Data/68K_h5/test.h5"
+        test_lab_path= "/home/ubuntu/SCRealVAE_68K/ACTINN_Data/68K_h5/test_lab.csv"
+
+        train_data_loader, valid_data_loader = CSV_IO(train_path, train_lab_path, test_path, test_lab_path,
+                                                batchSize=opt.batchSize,
+                                                workers = opt.workers)
+
+        # get input output information for the network
+        inp_size = [batch[0].shape[1] for _, batch in enumerate(train_data_loader, 0)][0];
+        number_of_classes = 9
+        print(number_of_classes)
+        
+    else:
+        raise ValueError("Wrong data type, please provide Scanpy/Seurat object or h5 dataframe")
     
     
     if opt.tensorboard:
@@ -128,11 +131,11 @@ def main():
     
     """
     cf_model = Classifier(output_dim = number_of_classes, input_size = inp_size).cuda()
-#     cf_criterion = torch.nn.CrossEntropyLoss()
+    cf_criterion = torch.nn.CrossEntropyLoss()
 
-    cf_criterion = torch.nn.BCEWithLogitsLoss()
+#     cf_criterion = torch.nn.BCEWithLogitsLoss()
     cf_optimizer = torch.optim.Adam(params=cf_model.parameters(), 
-                                    lr=0.001, 
+                                    lr=0.0001, 
                                     betas=(0.9, 0.999), 
                                     eps=1e-08, 
                                     weight_decay=0.005, 
@@ -162,71 +165,93 @@ def main():
         true_labels = Variable(labels).cuda()
                 
         info = f"\n====> Classifier Cur_iter: [{cur_iter}]: Epoch[{cf_epoch}]({iteration}/{len(train_data_loader)}): time: {time.time()-start_time:4.4f}: "
-        
-        loss_info = '[loss_rec, loss_margin, lossE_real_kl, lossE_rec_kl, lossE_fake_kl, lossG_rec_kl, lossG_fake_kl,]'
-            
+                    
         # =========== Update the classifier ================                  
         pred_cluster = cf_model(features) 
         loss = cf_criterion(pred_cluster.squeeze(), true_labels)
         loss.backward()  
         cf_optimizer.step()
         
-        if cur_iter % 1000 == 0:
+        # decaying the LR 
+        if cur_iter % opt.step == 0 and cur_iter != 0:
             cf_lr_scheduler.step() 
+            for param_group in cf_optimizer.param_groups:
+                print(f"    -> Decayed lr to -> {param_group['lr']}")
+
+        # =========== Printing Network Information ================     
+        info += f'Loss: {loss.data.item():.4f} ' 
+        
+        if cur_iter == 0:
+            print("    ->Initial stats:", info)
+
+        if epoch % opt.print_frequency == 0 and iteration == (len(train_data_loader) - 1) :
+            print(info)
+            
      
-        info += f'Loss: {loss.data.item():.4f} '     
-        print(info)
         
         
         
     # TRAIN     
+    print("---------------- ")
+    print("==> Trainig Started ")
+    print(f"    -> lr decaying after every {opt.step} steos")
+    print(f"    -> Training stats printed after every {opt.print_frequency} epochs")
     for epoch in range(0, opt.ClassifierEpochs + 1): 
         #save models
-        if epoch % 5 == 0 and epoch != 0:
+        if epoch % opt.print_frequency == 0 and epoch != 0:
+            evaluate_classifier(valid_data_loader, cf_model)
             save_epoch = (epoch//opt.save_iter)*opt.save_iter   
             save_checkpoint_classifier(cf_model, save_epoch, 0, '')
 
         cf_model.train()
         for iteration, batch in enumerate(train_data_loader, 0):
-                #--------------train Classifier Only------------
+                #============train Classifier Only============
                 train_classifier(epoch, iteration, batch, cur_iter);
                 cur_iter += 1
                 
     save_epoch = (epoch//opt.save_iter)*opt.save_iter    
     
     save_checkpoint_classifier(cf_model, save_epoch, 0, 'LAST')
-    print(f"TOTAL TRAINING TIME {time.time() - start_time}"); 
-        
-    
-
+    print("==> Final evaluation on validation data: ")
+    evaluate_classifier(valid_data_loader, cf_model)
+    print(f"==> Total training time {time.time() - start_time}");   
             
 def load_model(model, pretrained):
-        weights = torch.load(pretrained)
-        pretrained_dict = weights['Saved_Model'].state_dict()  
-        model_dict = model.state_dict()
-        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-        model_dict.update(pretrained_dict) 
-        model.load_state_dict(model_dict)
+    weights = torch.load(pretrained)
+    pretrained_dict = weights['Saved_Model'].state_dict()  
+    model_dict = model.state_dict()
+    pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+    model_dict.update(pretrained_dict) 
+    model.load_state_dict(model_dict)
 
-def save_checkpoint_classifier(model, epoch, iteration, prefix=""):
+def save_checkpoint_classifier(model, epoch, iteration, prefix="", dir_path = None):
+        
+    if not dir_path:
         dir_path = "./ClassifierWeights/"
-        model_out_path = dir_path + prefix +"model_epoch_{}_iter_{}.pth".format(epoch, iteration)
-        state = {"epoch": epoch ,"Saved_Model": model}
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
+        
+    model_out_path = dir_path + prefix +f"model_epoch_{epoch}_iter_{iteration}.pth"
+    state = {"epoch": epoch ,"Saved_Model": model}
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
 
-        torch.save(state, model_out_path)
-
-        print("Classifier Checkpoint saved to {}".format(model_out_path))
+    torch.save(state, model_out_path)
+    print(f"Classifier Checkpoint saved to {model_out_path}")
         
 def evaluate_classifier(valid_data_loader, cf_model):
-        print("==> Evaluating on Validation Set:")
-        cf_model.eval()
-        for iteration, batch in enumerate(valid_data_loader,0):
-            y_pred = cf_model(batch[0].cuda())
-            after_train = cf_criterion(y_pred.squeeze(),batch[1].cuda()) 
-            print(f'    ->Validation Cross Entropy Loss: {after_train.item()}')
 
+    print("==> Evaluating on Validation Set:")
+    total = 0;
+    correct = 0;
+        
+    with torch.no_grad():
+        for _, batch in enumerate(valid_data_loader,0):
+            data = batch[0].cuda()
+            labels = batch[1].cuda()
+            outputs = cf_model(data)
+            _, predicted = torch.max(outputs.squeeze(), 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    print(f'    -> Accuracy of the network on validation set: {(100 * correct / total):4.4f} %' )
     
 if __name__ == "__main__":
     main()   

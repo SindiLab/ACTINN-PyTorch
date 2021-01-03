@@ -26,14 +26,16 @@ class Classifier(nn.Module):
             nn.Linear(50, 25),
             nn.ReLU(),
             
-            nn.Linear(25, output_dim),
-            nn.Softmax(dim=1)
+            nn.Linear(25, output_dim)
+            # no need for CrossEntropyLoss in PyTorch
+#             nn.Softmax(dim=1)
         )
         
     def forward(self, x):        
         """
         
         Forward pass of the classifier: write out the actual
+        
         """
 
         out = self.classifier_sequential(x);     
