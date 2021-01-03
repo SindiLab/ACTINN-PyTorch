@@ -9,7 +9,7 @@ import pandas as pd
 from torch.utils.data import DataLoader
 
 # Make types to labels dictionary
-def type_to_label_dict(types):
+def type2label_dict(types):
     # input -- types
     # output -- type_to_label dictionary
     type_to_label_dict = {}
@@ -17,8 +17,6 @@ def type_to_label_dict(types):
     for i in range(len(all_type)):
         type_to_label_dict[all_type[i]] = i
     return type_to_label_dict
-
-
 
 # Convert types to labels
 def convert_type_to_label(types, type_to_label_dict):
@@ -59,25 +57,41 @@ def CSV_IO(train_path, train_labels_path, test_path, batchSize=128, workers = 12
     train_set = pd.read_hdf(train_path, key="dge")
     train_set.index = [s.upper() for s in train_set.index]
     train_set = train_set.loc[~train_set.index.duplicated(keep='first')]
-    
+
     train_label = pd.read_csv(train_labels_path, header=None, sep="\t")
-    
+
     test_set = pd.read_hdf(test_path, key="dge")
     test_set.index = [s.upper() for s in test_set.index]
     test_set = test_set.loc[~test_set.index.duplicated(keep='first')]
     barcode = list(test_set.columns)
     nt = len(set(train_label.iloc[:,1]))
-    
+
     train_set, test_set = scale_sets([train_set, test_set])
-    type_to_label_dict = type_to_label_dict(train_label.iloc[:,1])
+    type_to_label_dict = type2label_dict(train_label.iloc[:,1])
     label_to_type_dict = {v: k for k, v in type_to_label_dict.items()}
-    print("Cell Types in training set:", type_to_label_dict)
-    print("# Trainng cells:", train_label.shape[0])
+    print("    -> Cell types in training set:", type_to_label_dict)
+    print("    -> # trainng cells:", train_label.shape[0])
     train_label = convert_type_to_label(train_label.iloc[:,1], type_to_label_dict)
-    train_label = one_hot_matrix(train_label, nt)
-    
-    return train_set, test_set;
-    
 
+    # we want to get Cells X Genes
+    train_set = np.transpose(train_set)
+    test_set = np.transpose(test_set)
 
+    data_and_labels = []
+    validation_data_and_labels = [];
+    for i in range(len(train_set)):
+        data_and_labels.append([train_set[i], train_label[i]])
+        ## will add the test dataloader SOON
+        # since test set should be always be less than equal to train size
 
+    # create a DataLoader
+    train_data_loader = DataLoader(data_and_labels, batch_size=batchSize, shuffle=True, sampler=None,
+           batch_sampler=None, num_workers=workers, collate_fn=None,
+           pin_memory=True)
+
+    # SOON 
+    # valid_data_loader = DataLoader(validation_data_and_labels, batch_size=len(valid_data), shuffle=True, sampler=None,
+    #        batch_sampler=None, num_workers=workers, collate_fn=None,
+    #        pin_memory=True)
+
+    return train_data_loader

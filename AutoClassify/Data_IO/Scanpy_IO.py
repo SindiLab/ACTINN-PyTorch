@@ -7,18 +7,18 @@ from torch.utils.data import DataLoader
 def Scanpy_IO(file_path, batchSize=128, workers = 12):
     print("==> Reading Scanpy/Seurat object")
     adata = sc.read(file_path);
-    
+
     print("    ->Splitting Train and Validation Data")
     # train
     train_adata = adata[adata.obs['split'].isin(['train'])]
     # validation
     valid_adata = adata[adata.obs['split'].isin(['valid'])]
-    
-    # turn the cluster numbers into labels 
+
+    # turn the cluster numbers into labels
     print("==> Using cluster info for generating train and validation labels")
     y_train = [int(x) for x in train_adata.obs['cluster'].to_list()]
     y_valid = [int(x) for x in valid_adata.obs['cluster'].to_list()]
-    
+
     print("==> Checking if we have sparse matrix into dense")
     try:
         norm_count_train = np.asarray(train_adata.X.todense());
@@ -27,7 +27,7 @@ def Scanpy_IO(file_path, batchSize=128, workers = 12):
         print("    ->Seems the data is dense")
         norm_count_train = np.asarray(train_adata.X);
         norm_count_valid = np.asarray(valid_adata.X);
-    
+
     train_data = torch.torch.from_numpy(norm_count_train);
 #     train_data = torch.log(1 + train_data)
     valid_data = torch.torch.from_numpy(norm_count_valid);
@@ -37,24 +37,24 @@ def Scanpy_IO(file_path, batchSize=128, workers = 12):
     validation_data_and_labels = [];
     for i in range(len(train_data)):
         data_and_labels.append([norm_count_train[i], y_train[i]])
-        # since validation will always be less than equal to train size 
+        # since validation will always be less than equal to train size
         try:
             validation_data_and_labels.append([norm_count_valid[i], y_valid[i]])
         except:
             pass;
-            
+
     print(f"==> sample of the training data: {train_data}");
     print(f"==> sample of the validation data: {valid_data}");
-    
+
     inp_size = train_data.shape[1];
 
 
     train_data_loader = DataLoader(data_and_labels, batch_size=batchSize, shuffle=True, sampler=None,
            batch_sampler=None, num_workers=workers, collate_fn=None,
            pin_memory=True)
-    
+
     valid_data_loader = DataLoader(validation_data_and_labels, batch_size=len(valid_data), shuffle=True, sampler=None,
            batch_sampler=None, num_workers=workers, collate_fn=None,
            pin_memory=True)
-    
+
     return train_data_loader, valid_data_loader
