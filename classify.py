@@ -11,7 +11,7 @@ import numpy as np
 from math import log10
 
 #AutoClassify
-from AutoClassify import Classifier
+from AutoClassify import Classifier, Scanpy_IO, CSV_IO
 
 # reading in single cell data using scanpy
 import scanpy as sc
@@ -85,57 +85,20 @@ def main():
     
     
     """
+    ## FOR NOW WE WILL MANUALLY PICK WHICH OPTIONS WE WANT FOR IO
+    
     print("==> Reading in Data")
-    adata = sc.read('/home/jovyan/68K_PBMC_scGAN_Process/raw_68kPBMCs.h5ad');
+#     # if we have h5ad from a scanpy or seurat object 
+#     train_data_loader, valid_data_loader = Scanpy_IO('/home/jovyan/68K_PBMC_scGAN_Process/raw_68kPBMCs.h5ad',
+#                                                     batchSize=opt.batchSize, 
+#                                                     workers = opt.workers)
+#         # get the input size
+#     inp_size = [batch[0].shape[1] for _, batch in enumerate(valid_data_loader, 0)][0];
     
-    print("    ->Splitting Train and Validation Data")
-    # train
-    train_adata = adata[adata.obs['split'].isin(['train'])]
-    # validation
-    valid_adata = adata[adata.obs['split'].isin(['valid'])]
-    
-    # turn the cluster numbers into labels 
-    print("==> Using cluster info for generating train and validation labels")
-    y_train = [int(x) for x in train_adata.obs['cluster'].to_list()]
-    y_valid = [int(x) for x in valid_adata.obs['cluster'].to_list()]
-    
-    print("==> Checking if we have sparse matrix into dense")
-    try:
-        norm_count_train = np.asarray(train_adata.X.todense());
-        norm_count_valid = np.asarray(valid_adata.X.todense());
-    except:
-        print("    ->Seems the data is dense")
-        norm_count_train = np.asarray(train_adata.X);
-        norm_count_valid = np.asarray(valid_adata.X);
-    
-    train_data = torch.torch.from_numpy(norm_count_train);
-#     train_data = torch.log(1 + train_data)
-    valid_data = torch.torch.from_numpy(norm_count_valid);
-#     valid_data = torch.log(1 + valid_data)
+    # if we have CSV turned to h5 (pandas dataframe)
+    train_set, test_set = CSV_IO("/home/jovyan/ACTINN/train.h5","/home/jovyan/ACTINN/train_lab.csv", "/home/jovyan/ACTINN/test.h5")
 
-    data_and_labels = []
-    validation_data_and_labels = [];
-    for i in range(len(train_data)):
-        data_and_labels.append([norm_count_train[i], y_train[i]])
-        # since validation will always be less than equal to train size 
-        try:
-            validation_data_and_labels.append([norm_count_valid[i], y_valid[i]])
-        except:
-            pass;
-            
-    print(f"==> sample of the training data: {train_data}");
-    print(f"==> sample of the validation data: {valid_data}");
-    
-    inp_size = train_data.shape[1];
-
-
-    train_data_loader = DataLoader(data_and_labels, batch_size=opt.batchSize, shuffle=True, sampler=None,
-           batch_sampler=None, num_workers=opt.workers, collate_fn=None,
-           pin_memory=True)
-    
-    valid_data_loader = DataLoader(validation_data_and_labels, batch_size=len(valid_data), shuffle=True, sampler=None,
-           batch_sampler=None, num_workers=opt.workers, collate_fn=None,
-           pin_memory=True)
+    sys.exit("COMPLETED READING")
     
     if opt.tensorboard:
         from tensorboardX import SummaryWriter

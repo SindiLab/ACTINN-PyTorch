@@ -1,1 +1,1 @@
-from .AutoClassify import Classifier
+from .AutoClassify import *
