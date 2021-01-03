@@ -11,7 +11,12 @@ import numpy as np
 from math import log10
 
 #AutoClassify
+<<<<<<< HEAD
 from AutoClassify import Classifier, Scanpy_IO, CSV_IO
+=======
+from AutoClassify import Classifier, crossValidate
+from sklearn.model_selection import StratifiedKFold 
+>>>>>>> 9a5f72393bd2a840a811fc069938694563427b74
 
 # reading in single cell data using scanpy
 import scanpy as sc
@@ -41,7 +46,8 @@ parser = argparse.ArgumentParser()
 
 # classifier options
 parser.add_argument('--ClassifierOnly', type=bool, default=False, help='running the classifer only, default = False')
-parser.add_argument('--ClassifierEpochs', type=int, default=50, help='number of epochs to train the classifier, default = 50')
+parser.add_argument('--epochs', type=int, default=50, help='number of epochs to train the classifier, default = 50')
+parser.add_argument('--training', type=str, default="CV", help='the mode for training, default is no Cross Validation')
 
 parser.add_argument("--hdim", type=int, default=128, help="dim of the latent code, Default=128")
 parser.add_argument("--save_iter", type=int, default=1, help="Default=1")
@@ -88,12 +94,54 @@ def main():
     ## FOR NOW WE WILL MANUALLY PICK WHICH OPTIONS WE WANT FOR IO
     
     print("==> Reading in Data")
+<<<<<<< HEAD
 #     # if we have h5ad from a scanpy or seurat object 
 #     train_data_loader, valid_data_loader = Scanpy_IO('/home/jovyan/68K_PBMC_scGAN_Process/raw_68kPBMCs.h5ad',
 #                                                     batchSize=opt.batchSize, 
 #                                                     workers = opt.workers)
 #         # get the input size
 #     inp_size = [batch[0].shape[1] for _, batch in enumerate(valid_data_loader, 0)][0];
+=======
+    adata = sc.read('/home/ubuntu/scGAN_ProcessedData/raw_68kPBMCs.h5ad');
+    
+    print("    ->Splitting Train and Validation Data")
+    # train
+    train_adata = adata[adata.obs['split'].isin(['train'])]
+    # validation
+    valid_adata = adata[adata.obs['split'].isin(['valid'])]
+    
+    # turn the cluster numbers into labels 
+    print("==> Using cluster info for generating train and validation labels")
+    y_train = [int(x) for x in train_adata.obs['cluster'].to_list()]
+    y_valid = [int(x) for x in valid_adata.obs['cluster'].to_list()]
+    
+    print("==> Checking if we have sparse matrix into dense")
+    try:
+        norm_count_train = np.asarray(train_adata.X.todense());
+        norm_count_valid = np.asarray(valid_adata.X.todense());
+    except:
+        print("    ->Seems the data is dense")
+        norm_count_train = np.asarray(train_adata.X);
+        norm_count_valid = np.asarray(valid_adata.X);
+    
+    train_data = torch.torch.from_numpy(norm_count_train);
+#     train_data = torch.log(1 + train_data)
+    valid_data = torch.torch.from_numpy(norm_count_valid);
+#     valid_data = torch.log(1 + valid_data)
+
+    data_and_labels = []
+    validation_data_and_labels = [];
+    for i in range(len(train_data)):
+        data_and_labels.append([norm_count_train[i], y_train[i]])
+        # since validation will always be less than equal to train size 
+        try:
+            validation_data_and_labels.append([norm_count_valid[i], y_valid[i]])
+        except:
+            pass;
+            
+    print(f"==> sample of the training data: {train_data}");
+    print(f"==> sample of the validation data: {valid_data}");
+>>>>>>> 9a5f72393bd2a840a811fc069938694563427b74
     
     # if we have CSV turned to h5 (pandas dataframe)
     train_set, test_set = CSV_IO("/home/jovyan/ACTINN/train.h5","/home/jovyan/ACTINN/train_lab.csv", "/home/jovyan/ACTINN/test.h5")
@@ -154,24 +202,88 @@ def main():
         info += f'Cross Entropy Loss: {loss.data.item():.4f} '     
         print(info)
         
-        
-        
-    # TRAIN     
-    for epoch in range(0, opt.ClassifierEpochs + 1): 
-        #save models
-        if epoch % 5 == 0 :
-            save_epoch = (epoch//opt.save_iter)*opt.save_iter   
-            save_checkpoint_classifier(cf_model, save_epoch, 0, '')
+       
+    def train_crossValidation(epochs, batchsize , kfold=5, save_Model=False):
+        total_acc = 0
+        x_train = adata.X;
+        y_train = np.array([int(x) for x in adata.obs['cluster'].to_list()])
+        kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=1) 
+                
+        for fold, (train_index, test_index) in enumerate(kfold.split(x_train, y_train)):
+            ### Dividing data into folds
+            x_train_fold = x_train[train_index]
+            x_test_fold = x_train[test_index]
+            y_train_fold = y_train[train_index]
+            y_test_fold = y_train[test_index]
+            
+            train_data_and_labels = []
+            test_data_and_labels = [];
+            
+            for i in range(len(x_train_fold)):
+                train_data_and_labels.append([x_train_fold[i], y_train_fold[i]])
+                # since validation will always be less than equal to train size 
+                try:
+                    test_data_and_labels.append([x_test_fold[i], y_test_fold[i]])
+                except:
+                    pass;
 
-        cf_model.train()
-    for iteration, batch in enumerate(train_data_loader, 0):
-            #--------------train Classifier Only------------
-            train_classifier(epoch, iteration, batch, cur_iter);
-            cur_iter += 1
+            train_loader = DataLoader(train_data_and_labels, batch_size=opt.batchSize, shuffle=True, sampler=None,
+                           batch_sampler=None, num_workers=opt.workers, collate_fn=None,
+                           pin_memory=True)
+    
+            test_loader = DataLoader(test_data_and_labels, batch_size=opt.batchSize, shuffle=True, sampler=None,
+                          batch_sampler=None, num_workers=opt.workers, collate_fn=None,
+                          pin_memory=True)
+
+            for epoch in range(epochs):
+                print('\nEpoch {} / {} \nFold number {} / {}'.format(epoch + 1, epochs, fold + 1 , kfold.get_n_splits()))
+                correct = 0
+                
+                cf_model.train()
+                for batch_index, (x_batch, y_batch) in enumerate(train_loader):
+                    cf_optimizer.zero_grad()
+                    
+                    features= Variable(x_batch).cuda()
+                    true_labels = Variable(y_batch).cuda()
+                    
+                    pred_cluster = cf_model(features)
+                    loss = cf_criterion(pred_cluster.squeeze(), true_labels)
+                    loss.backward()
+                    cf_lr_scheduler.step() 
+                    pred = torch.max(pred_cluster.data, dim=1)[1]
+                    correct += (pred == true_labels).sum()
+                    
+                    if (batch_index + 1) % 32 == 0:
+                        print('[{}/{} ({:.0f}%)]\tLoss: {:.6f}\t Accuracy:{:.3f}%'.format(
+                            (batch_index + 1)*len(x_batch), len(train_loader.dataset),
+                            100.*batch_index / len(train_loader), loss.data, float(correct*100) / float(batchsize*(batch_index+1))))
+            total_acc += float(correct*100) / float(batchsize*(batch_index+1))
+        total_acc = (total_acc / kfold.get_n_splits())
+        print('\n\nTotal accuracy cross validation: {:.3f}%'.format(total_acc))
+        
+        
+    # TRAIN 
+    if opt.training == "default":
+        for epoch in range(0, opt.ClassifierEpochs + 1): 
+            #save models
+            if epoch % 5 == 0 :
+                save_epoch = (epoch//opt.save_iter)*opt.save_iter   
+                save_checkpoint_classifier(cf_model, save_epoch, 0, '')
+
+            cf_model.train()
+        for iteration, batch in enumerate(train_data_loader, 0):
+                #--------------train Classifier Only------------
+                train_classifier(epoch, iteration, batch, cur_iter);
+                cur_iter += 1
+                
+    elif opt.training == "CV":
+        train_crossValidation(opt.epochs, opt.batchSize , kfold=5, save_Model=False)
+        
+        
+        
         
     print(f"TOTAL TRAINING TIME {time.time() - start_time}"); 
         
-    
 
             
 def load_model(model, pretrained):
