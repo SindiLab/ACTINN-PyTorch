@@ -6,24 +6,23 @@ with open("README.md", mode="r", encoding="utf-8") as readme_file:
 
 
 setup(
-      name="AutoClassify",
-      version="0.0.1",
+      name="ACTINN",
+      version="0.0.2",
       author="A. Ali Heydari",
       author_email="aliheydari@ucdavis.edu",
-      description="Automatic Classification of Single Cell Data",
+      description="A PyTorch implementation of ACTINN: automated identification of cell types in single cell RNA sequencing ",
       long_description=readme,
       long_description_content_type="text/markdown",
       license="MIT",
-      url="https://github.com/SindiLab/Auto-Cell-Classification",
-      download_url="https://github.com/SindiLab/Auto-Cell-Classification",
+      url="https://github.com/SindiLab/ACTINN-PyTorch",
+      download_url="https://github.com/SindiLab/ACTINN-PyTorch",
       packages=find_packages(),
       install_requires=[
                         'tqdm==4.47.0',
                         'numpy==1.18.5',
                         'torch==1.5.1',
                         'scanpy==1.6.0',
-                        'tensorboardX==2.1',
-                        'keras==2.2.1'
+                        'tensorboardX==2.1'
                         ],
       classifiers=[
                    "Development Status :: 1 - Beta",
