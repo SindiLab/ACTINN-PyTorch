@@ -11,7 +11,7 @@ import numpy as np
 from math import log10
 
 #AutoClassify
-from AutoClassify import Classifier, Scanpy_IO, CSV_IO
+from ACTINN import Classifier, Scanpy_IO, CSV_IO
 
 # reading in single cell data using scanpy
 import scanpy as sc
