@@ -4,6 +4,19 @@ import scanpy as sc
 from torch.utils.data import DataLoader
 
 def Scanpy_IO(file_path, batchSize=128, workers = 12):
+    """
+    Reading in H5AD files that are AnnData object (from Scanpy or Seurat)
+    
+    INPUTS:
+        file_path -> absolute path to the .h5ad file 
+        batchSize -> batch size to be used for the PT dataloader
+        workers -> number of workers to load/lazy load in data 
+    
+    RETURN:
+        train_data_loader-> training data loader consisting of the data (at batch[0]) and labels (at batch[1])
+        test_data_loader-> testing data loader consisting of the data (at batch[0]) and labels (at batch[1])
+    
+    """
     print("==> Reading in Scanpy/Seurat AnnData")
     adata = sc.read(file_path);
 

@@ -216,8 +216,17 @@ def main():
     evaluate_classifier(valid_data_loader, cf_model)
     print(f"==> Total training time {time.time() - start_time}");   
             
-def load_model(model, pretrained):
-    weights = torch.load(pretrained)
+def load_model(model, pretrained_path):
+    """
+    Loading pre-trained weights of a model
+    INPUTS:
+        model -> a pytorch model which will be updated with the pre-trained weights 
+        pretrained_path -> path to where the .pth file is saved 
+    
+    RETURN:
+        the updated model 
+    """
+    weights = torch.load(pretrained_path)
     pretrained_dict = weights['Saved_Model'].state_dict()  
     model_dict = model.state_dict()
     pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
@@ -225,6 +234,17 @@ def load_model(model, pretrained):
     model.load_state_dict(model_dict)
 
 def save_checkpoint_classifier(model, epoch, iteration, prefix="", dir_path = None):
+    """
+    Saving pre-trained model for inference 
+    
+    INPUTS:
+        model-> PT model which we want to save
+        epoch-> the current epoch number (will be used in the filename)
+        iteration -> current iteration (will be used in the filename)
+        prefix (optional)-> a prefix to the filename 
+        dir_path (optional)-> path to save the pre-trained model
+    
+    """
         
     if not dir_path:
         dir_path = "./ClassifierWeights/"
@@ -238,7 +258,17 @@ def save_checkpoint_classifier(model, epoch, iteration, prefix="", dir_path = No
     print(f"Classifier Checkpoint saved to {model_out_path}")
         
 def evaluate_classifier(valid_data_loader, cf_model):
-
+    """
+    Evaluating the performance of the network on validation/test dataset
+    
+    INPUTS:
+        valid_data_loader-> a dataloader of the validation or test dataset 
+        cf_model-> the model which we want to use for validation
+    
+    RETURN:
+        None
+    
+    """
     print("==> Evaluating on Validation Set:")
     total = 0;
     correct = 0;

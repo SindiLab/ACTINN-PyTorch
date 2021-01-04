@@ -34,7 +34,7 @@ class Classifier(nn.Module):
     def forward(self, x):        
         """
         
-        Forward pass of the classifier: write out the actual
+        Forward pass of the classifier
         
         """
 
