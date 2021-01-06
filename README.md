@@ -4,10 +4,10 @@
 [Link to paper](https://academic.oup.com/bioinformatics/article-abstract/36/2/533/5540320?redirectedFrom=fulltext)
 
 ## Installation
-To install the package, clone the repository and change directory to the repository. Then run 
+To install the package, clone the repository. Then, run 
 
 ````bash
-pip install -e .
+pip install -e PATH/TO/FOLDER/WITH-setup.py
 ````
 Since `setup.py` is a fairly standard setup file, other methods of installing the package will work as well (as long as tried locally). 
 
