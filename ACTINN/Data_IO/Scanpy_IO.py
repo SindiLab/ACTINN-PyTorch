@@ -3,7 +3,8 @@ import numpy as np
 import scanpy as sc
 from torch.utils.data import DataLoader
 
-def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = False, log_base:int = None, log_method: str ='scanpy'):
+def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = False, 
+              log_base:int = None, log_method: str ='scanpy', verbose = 0):
     """
     Reading in H5AD files that are AnnData object (from Scanpy or Seurat)
     
@@ -14,6 +15,7 @@ def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = F
         log -> if we want to take log of the data 
         log_base -> which log base we want to use. If None, we will use natural log
         log_method -> if we want to take the log using scanpy or PyTorch
+        verbose -> hounding out much printing the code does (not fully used yet)
     
     RETURN:
         train_data_loader-> training data loader consisting of the data (at batch[0]) and labels (at batch[1])
@@ -43,7 +45,7 @@ def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = F
         norm_count_train = np.asarray(train_adata.X.todense());
         norm_count_valid = np.asarray(valid_adata.X.todense());
     except:
-        print("    ->Seems the data is dense")
+        print("    -> Seems the data is dense")
         norm_count_train = np.asarray(train_adata.X);
         norm_count_valid = np.asarray(valid_adata.X);
 
@@ -62,7 +64,7 @@ def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = F
             train_data = torch.log2(1 + train_data)
             valid_data = torch.log2(1 + valid_data)
         else:
-            raise ValueError("We have only implemented log base e, 2 and 10 for torch")
+            raise ValueError("    -> We have only implemented log base e, 2 and 10 for torch")
             
     data_and_labels = []
     validation_data_and_labels = [];
@@ -73,9 +75,10 @@ def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = F
             validation_data_and_labels.append([norm_count_valid[i], y_valid[i]])
         except:
             pass;
-
-#     print(f"==> sample of the training data: {train_data}");
-#     print(f"==> sample of the validation data: {valid_data}");
+    
+    if verbose:
+        print(f"==> sample of the training data: {train_data}");
+        print(f"==> sample of the validation data: {valid_data}");
 
     inp_size = train_data.shape[1];
 
