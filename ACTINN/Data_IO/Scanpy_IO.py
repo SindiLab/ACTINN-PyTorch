@@ -51,6 +51,7 @@ def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = T
     valid_data = torch.torch.from_numpy(norm_count_valid);
 
     if log and log_method == "torch":
+        print("    -> Doing log(x+1) transformation with torch")
         if log_base == None:
             train_data = torch.log(1 + train_data)
             valid_data = torch.log(1 + valid_data)
