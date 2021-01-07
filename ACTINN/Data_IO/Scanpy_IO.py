@@ -3,7 +3,7 @@ import numpy as np
 import scanpy as sc
 from torch.utils.data import DataLoader
 
-def Scanpy_IO(file_path, batchSize=128, workers = 12):
+def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = True, log_base:int = None, log_method: str ='scanpy'):
     """
     Reading in H5AD files that are AnnData object (from Scanpy or Seurat)
     
@@ -11,6 +11,9 @@ def Scanpy_IO(file_path, batchSize=128, workers = 12):
         file_path -> absolute path to the .h5ad file 
         batchSize -> batch size to be used for the PT dataloader
         workers -> number of workers to load/lazy load in data 
+        log -> if we want to take log of the data 
+        log_base -> which log base we want to use. If None, we will use natural log
+        log_method -> if we want to take the log using scanpy or PyTorch
     
     RETURN:
         train_data_loader-> training data loader consisting of the data (at batch[0]) and labels (at batch[1])
@@ -19,8 +22,12 @@ def Scanpy_IO(file_path, batchSize=128, workers = 12):
     """
     print("==> Reading in Scanpy/Seurat AnnData")
     adata = sc.read(file_path);
-
-    print("    ->Splitting Train and Validation Data")
+    
+    if log and log_method == 'scanpy':
+        print("    -> Doing log(x+1) transformation with Scanpy")
+        sc.pp.log1p(adata, base=log_base)
+        
+    print("    -> Splitting Train and Validation Data")
     # train
     train_adata = adata[adata.obs['split'].isin(['train'])]
     # validation
@@ -43,10 +50,19 @@ def Scanpy_IO(file_path, batchSize=128, workers = 12):
     train_data = torch.torch.from_numpy(norm_count_train);
     valid_data = torch.torch.from_numpy(norm_count_valid);
 
-# in case we want to log-scale the data 
-#     train_data = torch.log(1 + train_data)
-#     valid_data = torch.log(1 + valid_data)
-
+    if log and log_method == "torch":
+        if log_base == None:
+            train_data = torch.log(1 + train_data)
+            valid_data = torch.log(1 + valid_data)
+        elif log_base == 2:
+            train_data = torch.log2(1 + train_data)
+            valid_data = torch.log2(1 + valid_data)
+        elif log_base == 10:
+            train_data = torch.log2(1 + train_data)
+            valid_data = torch.log2(1 + valid_data)
+        else:
+            raise ValueError("We have only implemented log base e, 2 and 10 for torch")
+            
     data_and_labels = []
     validation_data_and_labels = [];
     for i in range(len(train_data)):

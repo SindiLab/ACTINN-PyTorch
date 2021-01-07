@@ -73,7 +73,7 @@ def scale_sets(sets):
         sets[i] = sets[i].loc[common_genes,]
         sep_point.append(sets[i].shape[1])
     total_set = np.array(pd.concat(sets, axis=1, sort=False), dtype=np.float32)
-    total_set = np.divide(total_set, np.sum(total_set, axis=0, keepdims=True)) * 10000
+    total_set = np.divide(total_set, np.sum(total_set, axis=0, keepdims=True)) * 20000
     total_set = np.log2(total_set+1)
     expr = np.sum(total_set, axis=1)
     total_set = total_set[np.logical_and(expr >= np.percentile(expr, 1), expr <= np.percentile(expr, 99)),]
