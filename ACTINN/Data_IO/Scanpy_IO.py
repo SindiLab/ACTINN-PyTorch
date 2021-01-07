@@ -3,7 +3,7 @@ import numpy as np
 import scanpy as sc
 from torch.utils.data import DataLoader
 
-def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = True, log_base:int = None, log_method: str ='scanpy'):
+def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = False, log_base:int = None, log_method: str ='scanpy'):
     """
     Reading in H5AD files that are AnnData object (from Scanpy or Seurat)
     
