@@ -5,10 +5,13 @@ import os
 import sys 
 import copy
 import time
+from tqdm import tqdm
 import random
 import argparse
 import numpy as np
 from math import log10
+from sklearn.metrics import f1_score
+
 
 #AutoClassify
 from ACTINN import Classifier, Scanpy_IO, CSV_IO
@@ -36,13 +39,10 @@ torch.autograd.set_detect_anomaly(True)
 parser = argparse.ArgumentParser()
 
 # classifier options
-parser.add_argument('--ClassifierOnly', type=bool, default=False, help='running the classifer only, default = False')
 parser.add_argument('--ClassifierEpochs', type=int, default=10, help='number of epochs to train the classifier, default = 50')
 
 parser.add_argument('--data_type', type=str, default="scanpy", help='type of train/test data, default="scanpy"')
-parser.add_argument("--hdim", type=int, default=128, help="dim of the latent code, Default=128")
 parser.add_argument("--save_iter", type=int, default=1, help="Default=1")
-parser.add_argument("--test_iter", type=int, default=1000, help="Default=1000")
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=24)
 parser.add_argument('--batchSize', type=int, default=128, help='input batch size')
 
@@ -50,7 +50,6 @@ parser.add_argument("--start_epoch", default=1, type=int, help="Manual epoch num
 parser.add_argument('--print_frequency', type=int, default=5, help='frequency of training stats printing, default=5')
 
 parser.add_argument('--lr', type=float, default=0.0001, help='learning rate, default=0.0001')
-parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
 parser.add_argument("--momentum", default=0.9, type=float, help="Momentum, Default: 0.9")
 parser.add_argument('--clip', type=float, default=100, help='the threshod for clipping gradient')
 parser.add_argument("--step", type=int, default=1000, help="Sets the learning rate to the initial LR decayed by momentum every n epochs, Default: n=1000")
@@ -196,12 +195,12 @@ def main():
     print("==> Trainig Started ")
     print(f"    -> lr decaying after every {opt.step} steos")
     print(f"    -> Training stats printed after every {opt.print_frequency} epochs")
-    for epoch in range(0, opt.ClassifierEpochs + 1): 
+    for epoch in tqdm(range(0, opt.ClassifierEpochs + 1), desc="Classifier Training"): 
         #save models
         if epoch % opt.print_frequency == 0 and epoch != 0:
             evaluate_classifier(valid_data_loader, cf_model)
             save_epoch = (epoch//opt.save_iter)*opt.save_iter   
-            save_checkpoint_classifier(cf_model, save_epoch, 0, '')
+#             save_checkpoint_classifier(cf_model, save_epoch, 0, '')
 
         cf_model.train()
         for iteration, batch in enumerate(train_data_loader, 0):
@@ -282,6 +281,11 @@ def evaluate_classifier(valid_data_loader, cf_model):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
     print(f'    -> Accuracy of the network on validation set: {(100 * correct / total):4.4f} %' )
+    # calculating the precision/recall based multi-label F1 score
+    macro_score = f1_score(labels.detach().cpu().numpy(),predicted.detach().cpu().numpy(), average = 'macro' )
+    w_score = f1_score(labels.detach().cpu().numpy(),predicted.detach().cpu().numpy(), average = 'weighted' )
+    print(f'    -> Non-Weighted F1 Score on validation set: {macro_score:4.4f} ' )
+    print(f'    -> Weighted F1 Score on validation set: {w_score:4.4f} ' )
     
 if __name__ == "__main__":
     main()   
