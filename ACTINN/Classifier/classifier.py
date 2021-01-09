@@ -17,19 +17,19 @@ class Classifier(nn.Module):
         
         # feed forward layers  
         self.classifier_sequential = nn.Sequential(
-            nn.Linear(self.inp_dim, 100),
-            nn.ReLU(),
+                                        nn.Linear(self.inp_dim, 100),
+                                        nn.ReLU(),
             
-            nn.Linear(100, 50),
-            nn.ReLU(),
+                                        nn.Linear(100, 50),
+                                        nn.ReLU(),
             
-            nn.Linear(50, 25),
-            nn.ReLU(),
+                                        nn.Linear(50, 25),
+                                        nn.ReLU(),
             
-            nn.Linear(25, output_dim)
-            # no need for CrossEntropyLoss in PyTorch
-#             nn.Softmax(dim=1)
-        )
+                                        nn.Linear(25, output_dim)
+                                        # SoftMax not needed for CrossEntropyLoss in PyTorch
+                                        ## i.e. no need for nn.Softmax(dim=1)
+                                        )
         
     def forward(self, x):        
         """
