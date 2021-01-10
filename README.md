@@ -35,6 +35,38 @@ We have provided a full example of classifying the 68K PBMC datasets. The pre-pr
 
 ***Please Cite the following if you use this package***
 
-Original Authors 
-Our paper coming out 
+## Citation
+
+Please cite our repository if it was useful for your research:
+
+```
+@misc{Heydari2020,
+  author = {Heydari, A. Ali},
+  title = {PyTorch implementation of ACTINN},
+  year = {2020},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/SindiLab/ACTINN-PyTorch}},
+}
+```
+
+and the original paper:
+
+```
+@article{10.1093/bioinformatics/btz592,
+    author = {Ma, Feiyang and Pellegrini, Matteo},
+    title = "{ACTINN: automated identification of cell types in single cell RNA sequencing}",
+    journal = {Bioinformatics},
+    volume = {36},
+    number = {2},
+    pages = {533-538},
+    year = {2019},
+    month = {07},
+    issn = {1367-4803},
+    doi = {10.1093/bioinformatics/btz592},
+    url = {https://doi.org/10.1093/bioinformatics/btz592},
+    eprint = {https://academic.oup.com/bioinformatics/article-pdf/36/2/533/31962865/btz592.pdf},
+}
+```
+
 
