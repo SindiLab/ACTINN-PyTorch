@@ -3,13 +3,14 @@ import numpy as np
 import scanpy as sc
 from torch.utils.data import DataLoader
 
-def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = False, 
-              log_base:int = None, log_method: str ='scanpy', verbose = 0):
+def Scanpy_IO(file_path:str, test_no_valid:bool = False, batchSize:int = 128, workers:int = 12, log:bool = False, 
+              log_base:int = None, log_method: str ='scanpy', verbose = 0, ):
     """
     Reading in H5AD files that are AnnData object (from Scanpy or Seurat)
     
     INPUTS:
         file_path -> absolute path to the .h5ad file 
+        test_or_valid -> boolean to check for test if no validation set is available
         batchSize -> batch size to be used for the PT dataloader
         workers -> number of workers to load/lazy load in data 
         log -> if we want to take log of the data 
@@ -32,8 +33,12 @@ def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = F
     print("    -> Splitting Train and Validation Data")
     # train
     train_adata = adata[adata.obs['split'].isin(['train'])]
-    # validation
-    valid_adata = adata[adata.obs['split'].isin(['valid'])]
+    # validation or test set
+    if test_no_valid:
+        valid_adata = adata[adata.obs['split'].isin(['test'])]
+        
+    else:
+        valid_adata = adata[adata.obs['split'].isin(['valid'])]
 
     # turn the cluster numbers into labels
     print("==> Using cluster info for generating train and validation labels")
@@ -78,7 +83,10 @@ def Scanpy_IO(file_path:str, batchSize:int = 128, workers:int = 12, log:bool = F
     
     if verbose:
         print(f"==> sample of the training data: {train_data}");
-        print(f"==> sample of the validation data: {valid_data}");
+        if test_no_valid:
+            print(f"==> sample of the test data: {valid_data}");
+        else:
+            print(f"==> sample of the validation data: {valid_data}");
 
     inp_size = train_data.shape[1];
 
