@@ -1,6 +1,5 @@
 # std libs
 import os
-from tqdm import tqdm
 from sklearn.metrics import f1_score
 
 # torch libs
@@ -63,14 +62,18 @@ def evaluate_classifier(valid_data_loader, cf_model):
         None
     
     """
+    ##### This could be a bug if a user has GPUs but it not using them! 
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
     print("==> Evaluating on Validation Set:")
     total = 0;
     correct = 0;
         
     with torch.no_grad():
         for _, batch in enumerate(valid_data_loader,0):
-            data = batch[0].cuda()
-            labels = batch[1].cuda()
+            data = batch[0].to(device)
+            labels = batch[1].to(device)
             outputs = cf_model(data)
             _, predicted = torch.max(outputs.squeeze(), 1)
             total += labels.size(0)

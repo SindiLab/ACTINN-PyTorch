@@ -73,7 +73,18 @@ str_to_list = lambda x: [int(xi) for xi in x.split(',')]
 def main():
     global opt, model
     opt = parser.parse_args()
-#     print(opt);
+    
+    # determin the device for torch 
+    ## if we are allowed to run things on CUDA
+    if opt.cuda and torch.cuda.is_available():
+        device = "cuda";
+        print('==> Using GPU (CUDA)')
+        
+    else :
+        device = "cpu"
+        print('==> Using CPU')
+        print('    -> Warning: Using CPUs will yield to slower training time than GPUs')
+    
     
     
     """
@@ -130,7 +141,7 @@ def main():
     Building the classifier model:
     
     """
-    cf_model = Classifier(output_dim = number_of_classes, input_size = inp_size).cuda()
+    cf_model = Classifier(output_dim = number_of_classes, input_size = inp_size).to(device)
     cf_criterion = torch.nn.CrossEntropyLoss()
 
 #     cf_criterion = torch.nn.BCEWithLogitsLoss()
@@ -161,8 +172,8 @@ def main():
             batch = batch[0]
         batch_size = batch.size(0)
                        
-        features= Variable(batch).cuda()
-        true_labels = Variable(labels).cuda()
+        features= Variable(batch).to(device)
+        true_labels = Variable(labels).to(device)
                 
         info = f"\n====> Classifier Cur_iter: [{cur_iter}]: Epoch[{cf_epoch}]({iteration}/{len(train_data_loader)}): time: {time.time()-start_time:4.4f}: "
                     
