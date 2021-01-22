@@ -1,7 +1,7 @@
 # std libs
 import os
 from sklearn.metrics import f1_score
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report as class_rep
 
 
 # torch libs
@@ -52,13 +52,17 @@ def save_checkpoint_classifier(model, epoch, iteration, prefix="", dir_path = No
 
 
 
-def evaluate_classifier(valid_data_loader, cf_model, classification_report:bool = False):
+def evaluate_classifier(valid_data_loader, cf_model, 
+                        classification_report:bool = False,
+                        device=None):
     """
     Evaluating the performance of the network on validation/test dataset
 
     INPUTS:
         valid_data_loader-> a dataloader of the validation or test dataset
         cf_model-> the model which we want to use for validation
+        classification_report -> if you want to enable classification report
+        device-> if you want to run the evaluation on a specific device
 
     RETURN:
         None
@@ -66,7 +70,8 @@ def evaluate_classifier(valid_data_loader, cf_model, classification_report:bool 
     """
     ##### This could be a bug if a user has GPUs but it not using them!
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if not device:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print("==> Evaluating on Validation Set:")
     total = 0;
@@ -87,4 +92,4 @@ def evaluate_classifier(valid_data_loader, cf_model, classification_report:bool 
     print(f'    -> Non-Weighted F1 Score on validation set: {macro_score:4.4f} ' )
     print(f'    -> Weighted F1 Score on validation set: {w_score:4.4f} ' )
     if classification_report:
-        print(classification_report(labels.detach().cpu().numpy(),predicted.detach().cpu().numpy(), target_names=target_names))
+        print(class_rep(labels.detach().cpu().numpy(),predicted.detach().cpu().numpy()))
