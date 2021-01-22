@@ -1,5 +1,6 @@
 # std libs
 import os
+import numpy as np
 from sklearn.metrics import f1_score
 from sklearn.metrics import classification_report as class_rep
 
@@ -50,8 +51,7 @@ def save_checkpoint_classifier(model, epoch, iteration, prefix="", dir_path = No
     torch.save(state, model_out_path)
     print(f"Classifier Checkpoint saved to {model_out_path}")
 
-
-
+        
 def evaluate_classifier(valid_data_loader, cf_model, 
                         classification_report:bool = False,
                         device=None):
@@ -76,20 +76,27 @@ def evaluate_classifier(valid_data_loader, cf_model,
     print("==> Evaluating on Validation Set:")
     total = 0;
     correct = 0;
-
+    # for sklearn metrics
+    y_true = np. array([])
+    y_pred = np. array([])
     with torch.no_grad():
-        for _, batch in enumerate(valid_data_loader,0):
-            data = batch[0].to(device)
-            labels = batch[1].to(device)
+        for sample in valid_data_loader:
+            data, labels = sample;
+            data = data.to(device)
+            labels = labels.to(device)
             outputs = cf_model(data)
             _, predicted = torch.max(outputs.squeeze(), 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+            # get all the labels for true and pred so we could use them in sklearn metrics
+            y_true = np.append(y_true,labels.detach().cpu().numpy())
+            y_pred = np.append(y_pred,predicted.detach().cpu().numpy())
+            
     print(f'    -> Accuracy of classifier network on validation set: {(100 * correct / total):4.4f} %' )
     # calculating the precision/recall based multi-label F1 score
-    macro_score = f1_score(labels.detach().cpu().numpy(),predicted.detach().cpu().numpy(), average = 'macro' )
-    w_score = f1_score(labels.detach().cpu().numpy(),predicted.detach().cpu().numpy(), average = 'weighted' )
+    macro_score = f1_score(y_true, y_pred, average = 'macro' )
+    w_score = f1_score(y_true, y_pred,average = 'weighted' )
     print(f'    -> Non-Weighted F1 Score on validation set: {macro_score:4.4f} ' )
     print(f'    -> Weighted F1 Score on validation set: {w_score:4.4f} ' )
     if classification_report:
-        print(class_rep(labels.detach().cpu().numpy(),predicted.detach().cpu().numpy()))
+        print(class_rep(y_true,y_pred))
