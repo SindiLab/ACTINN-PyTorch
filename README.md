@@ -111,7 +111,7 @@ import ACTINN
 model_dict = torch.load("/home/ubuntu/SindiLab/SCIV/ClassifierWeights/pbmc-model_epoch_10_iter_0.pth")
 
 # REMEMBER: 
-## we saved the epoch number and the model in a dictionary as follows- > state = {"epoch": epoch ,"Saved_Model": model}
+## we saved the epoch number and the model in a dictionary -> state = {"epoch": epoch ,"Saved_Model": model}
 actinn = model_dict["Saved_Model"]
 
 ## evaluate or use just like any other pytorch model
