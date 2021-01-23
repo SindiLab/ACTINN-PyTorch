@@ -94,7 +94,7 @@ We have provided a full example of classifying the 68K PBMC datasets. The pre-pr
 
 ### Saving ACTINN Models
 We provide a function to easily save the model whenever needed. The fuction will create a dictionary: `state = {"epoch": epoch ,"Saved_Model": model}`. `epoch` will store the epoch, and `Saved_Model` will have the actual torch model.
-````
+````python
 # assuming we have a model that is training called "actinn_training"
 curr_epoch = current_epoch; # the current epoch in which we are calling this fucntion
 curr_iter = current_iteration; # the current iteration in which we are calling this fucntion
