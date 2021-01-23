@@ -27,10 +27,10 @@ from ACTINN import Scanpy_IO
 
 # get training and testing dataloaders
 train_data_loader, test_data_loader = Scanpy_IO('PATH/TO/SINGLE-CELL/DATA/file.h5ad',
-                                                        batchSize = 128, 
-                                                        workers = 32,
-                                                        # use this option if there are 'test' samples but not validation
-                                                        test_no_valid = True)
+                                                 batchSize = 128, 
+                                                 workers = 32,
+                                                 # use this option if there are 'test' samples but not validation
+                                                 test_no_valid = True)
 ````
 
 To make dataloader objects from an existing `scanpy` object in the code:
