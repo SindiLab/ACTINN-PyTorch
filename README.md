@@ -17,7 +17,35 @@ We provide two input/output functions (in `Scanpy_IO.py` and `CSV_IO.py`) for co
 
 #### Scanpy/AnnData Objects (Preferred)
 
-You can do the standard clustering of the cells using `scanpy`, and the cluster numbers will be used as the training labels. For the training and validation split, randomly add `train` and `valid`/`test` flags to the scanpy object. Then, you can easily pass that object to the `scanpy_IO` function, which returns a train and validation (or test) pytorch dataloader. 
+You can do the standard clustering of the cells using `scanpy`, and the cluster numbers will be used as the training labels. For the training and validation split, randomly add `train` and `valid`/`test` flags to the scanpy object. Then, you can easily pass that object to the `scanpy_IO` function, which returns a train and validation (or test) pytorch dataloader. Here are examples of creating dataloaders from Scanpy object:
+
+To make dataloader objects from a file stored in a path
+
+````python
+# to make dataloader objects from a file stored in a path 
+from ACTINN import Scanpy_IO
+
+# get training and testing dataloaders
+train_data_loader, test_data_loader = Scanpy_IO('PATH/TO/SINGLE-CELL/DATA/file.h5ad',
+                                                        batchSize = 128, 
+                                                        workers = 32,
+                                                        # use this option if there are 'test' samples but not validation
+                                                        test_no_valid = True)
+````
+
+To make dataloader objects from an existing `scanpy` object in the code:
+
+````python
+# to make dataloader objects from a file stored in a path 
+from ACTINN import ScanpyObj_IO
+
+# get training and testing dataloaders
+train_data_loader, test_data_loader = ScanpyObj_IO(scanpyObj,
+                                                   batchSize = 128, 
+                                                   workers = 32,
+                                                   # use this option if there are 'test' samples but not validation
+                                                   test_no_valid = True)
+````
 
 #### CSV I/O 
 
@@ -25,13 +53,36 @@ This is the original formatting that ACTINN provides, which includes a CSV files
 
 
 ## USAGE
+To create the ACTINN classifier network, you can do the following:
+````python
+import torch
+from ACTINN import Classifier
 
+# choose the appropriate device
+## e.g.:
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# create the Classifier instance
+actinn_model = Classifier(output_dim = number_of_classes, input_size = inp_size).to(device)
+
+# NOW TRAIN JUST LIKE ANY OTHER PYTORCH MODEL
+## an example of this is provided in the file called <classify.py> 
+
+````
 
 ## Examples
 We have provided a full example of classifying the 68K PBMC datasets. The pre-processed data can be downloaded from our S3 bucket [here]().
 
 ## Saving and Loading Pre-Trained Models
 
+
+### Loading Pre-Trained Models
+Our implementation of ACTINN automatically saves the model at last iteration of training. To load in:
+````python
+model_dict = torch.load("/home/ubuntu/SindiLab/SCIV/ClassifierWeights/pbmc-model_epoch_10_iter_0.pth")
+actinn = model_dict["Saved_Model"]
+actinn.eval();
+````
 
 ***Please Cite the following if you use this package***
 
