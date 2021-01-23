@@ -70,17 +70,51 @@ actinn_model = Classifier(output_dim = number_of_classes, input_size = inp_size)
 
 ````
 
+### Evaluating Classification
+We use `sklearn` to evaluate and report the accuracy of the classifications. Here is an example:
+````python
+from ACTINN.utils import *
+
+# assuming we have a trained model called "actinn_trained"
+## assuming we have a test dataloader called "test_data_loader"
+### assuming we know which device we want to use, stored in "device"
+#### Note: if no device is passed to the following function, it will try to use CUDA if available
+
+evaluate_classifier(test_data_loader, 
+                    actinn_trained,
+                    classification_report = True,
+                    device=None
+                    )
+````
+
 ## Examples
 We have provided a full example of classifying the 68K PBMC datasets. The pre-processed data can be downloaded from our S3 bucket [here]().
 
 ## Saving and Loading Pre-Trained Models
 
+### Saving ACTINN Models
+We provide a function to easily save the model whenever needed. The fuction will create a dictionary: `state = {"epoch": epoch ,"Saved_Model": model}`. `epoch` will store the epoch, and `Saved_Model` will have the actual torch model.
+````
+# assuming we have a model that is training called "actinn_training"
+curr_epoch = current_epoch; # the current epoch in which we are calling this fucntion
+curr_iter = current_iteration; # the current iteration in which we are calling this fucntion
+
+save_checkpoint_classifier(actinn_training, curr_epoch, current_iter, 'SOME-PREFIX IF YOU WANT')
+````
 
 ### Loading Pre-Trained Models
 Our implementation of ACTINN automatically saves the model at last iteration of training. To load in:
 ````python
+import torch 
+import ACTINN
+
 model_dict = torch.load("/home/ubuntu/SindiLab/SCIV/ClassifierWeights/pbmc-model_epoch_10_iter_0.pth")
+
+# REMEMBER: 
+## we saved the epoch number and the model in a dictionary as follows- > state = {"epoch": epoch ,"Saved_Model": model}
 actinn = model_dict["Saved_Model"]
+
+## evaluate or use just like any other pytorch model
 actinn.eval();
 ````
 
