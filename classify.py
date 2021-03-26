@@ -97,15 +97,24 @@ def main():
 
     if opt.data_type.lower() == "scanpy":
         # if we have h5ad from a scanpy or seurat object 
-        train_data_loader, valid_data_loader = Scanpy_IO('/home/ubuntu/scGAN_ProcessedData/raw_68kPBMCs.h5ad',
+#         train_data_loader, valid_data_loader = Scanpy_IO('/home/ubuntu/scGAN_ProcessedData/raw_68kPBMCs.h5ad',
+#                                                         batchSize=opt.batchSize, 
+#                                                         workers = opt.workers)
+        print("     -> Reading NeuroCOVID")
+            # 78K NeuroCOVID
+        train_data_loader, valid_data_loader = Scanpy_IO('/home/ubuntu/RawData/78KNeuroCOVID_preprocessed_splitted_logged.h5ad',
+                                                        test_no_valid = True,
                                                         batchSize=opt.batchSize, 
-                                                        workers = opt.workers)
+                                                        workers = opt.workers,
+                                                        log=False,
+                                                        verbose = 1)
 
         # get input output information for the network
         inp_size = [batch[0].shape[1] for _, batch in enumerate(valid_data_loader, 0)][0];
         labs = [batch[1] for _, batch in enumerate(valid_data_loader, 0)][0];
-        number_of_classes = len(set(labs))
+        number_of_classes = 20
         print(f"==> Number of classes {number_of_classes}")
+        print(f"==> Number of genes {inp_size}")
     
     elif opt.data_type.lower() == "csv":
         # if we have CSV turned to h5 (pandas dataframe)
@@ -201,7 +210,7 @@ def main():
     # TRAIN     
     print("---------------- ")
     print("==> Trainig Started ")
-    print(f"    -> lr decaying after every {opt.step} steos")
+    print(f"    -> lr decaying after every {opt.step} steps")
     print(f"    -> Training stats printed after every {opt.print_frequency} epochs")
     for epoch in tqdm(range(0, opt.ClassifierEpochs + 1), desc="Classifier Training"): 
         #save models
