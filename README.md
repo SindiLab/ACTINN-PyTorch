@@ -4,12 +4,23 @@
 [Link to paper](https://academic.oup.com/bioinformatics/article-abstract/36/2/533/5540320?redirectedFrom=fulltext)
 
 ## Installation
-To install the package, clone the repository. Then, run 
+#### Step 1: Install Requirements Explicitly
+
+Ensure that you are in the same directory as `requirements.txt`. Then using `pip`, we can install the requirements with:
 
 ````bash
-pip install -e PATH/TO/FOLDER/WITH-setup.py
+pip install -r requirements.txt
 ````
-Since `setup.py` is a fairly standard setup file, other methods of installing the package will work as well (as long as tried locally). 
+Although the core requirements are listed directly in `setup.py`, it is good to run this beforehand in case of any dependecy on packages from GitHub. 
+
+#### Step 2: Install Package Locally
+Make sure to be in the same directory as `setup.py`. Then, using `pip`, run:
+
+````bash
+pip install -e .
+````
+
+For step 2, expect a lot of the requirements to be satisfied already (since you installed the requirements in advance).
 
 ## Training Data
 
