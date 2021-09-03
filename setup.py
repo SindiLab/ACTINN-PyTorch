@@ -21,7 +21,7 @@ setup(
                         'tqdm==4.47.0',
                         'numpy==1.18.5',
                         'torch==1.5.1',
-                        'scanpy==1.7.1',
+                        'scanpy==1.6.0',
                         'tensorboardX==2.1'
                         ],
       classifiers=[
