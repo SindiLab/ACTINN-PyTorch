@@ -40,7 +40,7 @@ torch.autograd.set_detect_anomaly(True)
 parser = argparse.ArgumentParser()
 
 # classifier options
-parser.add_argument('--ClassifierEpochs', type=int, default=10, help='number of epochs to train the classifier, default = 50')
+parser.add_argument('--ClassifierEpochs', type=int, default=50, help='number of epochs to train the classifier, default = 50')
 
 parser.add_argument('--data_type', type=str, default="scanpy", help='type of train/test data, default="scanpy"')
 parser.add_argument("--save_iter", type=int, default=1, help="Default=1")
@@ -100,15 +100,25 @@ def main():
 #         train_data_loader, valid_data_loader = Scanpy_IO('/home/ubuntu/scGAN_ProcessedData/raw_68kPBMCs.h5ad',
 #                                                         batchSize=opt.batchSize, 
 #                                                         workers = opt.workers)
-        print("     -> Reading NeuroCOVID")
-            # 78K NeuroCOVID
-        train_data_loader, valid_data_loader = Scanpy_IO('/home/ubuntu/RawData/78KNeuroCOVID_preprocessed_splitted_logged.h5ad',
+        print("     -> Reading COVID PMBC")
+        # 68K PBMC
+        train_data_loader, valid_data_loader = Scanpy_IO('/home/jovyan/N-ACT_Data/68K_PBMC_Processed_MTRiboFiltered_noramlized_split.h5ad',
                                                         test_no_valid = True,
                                                         batchSize=opt.batchSize, 
                                                         workers = opt.workers,
                                                         log=False,
                                                         verbose = 1)
 
+        
+         # 18K COVID PBMC
+        # train_data_loader, valid_data_loader = Scanpy_IO('/home/jovyan/N-ACT_Data/pbmc_covid19_TrainSplit.h5ad',
+        #                                                 test_no_valid = True,
+        #                                                 batchSize=opt.batchSize, 
+        #                                                 workers = opt.workers,
+        #                                                 log=False,
+        #                                                 verbose = 1)
+
+        
         # get input output information for the network
         inp_size = [batch[0].shape[1] for _, batch in enumerate(valid_data_loader, 0)][0];
         labs = [batch[1] for _, batch in enumerate(valid_data_loader, 0)][0];
@@ -151,6 +161,8 @@ def main():
     
     """
     cf_model = Classifier(output_dim = number_of_classes, input_size = inp_size).to(device)
+    # initilize the weights in our model
+    cf_model.apply(init_weights)
     cf_criterion = torch.nn.CrossEntropyLoss()
 
 #     cf_criterion = torch.nn.BCEWithLogitsLoss()
@@ -229,7 +241,7 @@ def main():
     
     save_checkpoint_classifier(cf_model, save_epoch, 0, 'LAST')
     print("==> Final evaluation on validation data: ")
-    evaluate_classifier(valid_data_loader, cf_model)
+    evaluate_classifier(valid_data_loader, cf_model, classification_report=True)
     print(f"==> Total training time {time.time() - start_time}");   
             
     
