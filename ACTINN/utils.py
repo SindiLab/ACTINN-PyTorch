@@ -8,6 +8,19 @@ from sklearn.metrics import classification_report as class_rep
 # torch libs
 import torch
 
+def init_weights(model):
+    """
+    Initializing the weights of a model with Xavier uniform
+    INPUTS:
+        model -> a pytorch model which will be initilized with xavier weights
+
+    RETURN:
+        the updated weights of the model
+    """
+    
+    if isinstance(model, torch.nn.Linear):
+        torch.nn.init.xavier_uniform_(model.weight)
+        model.bias.data.fill_(0.01)
 
 def load_model(model, pretrained_path):
     """
