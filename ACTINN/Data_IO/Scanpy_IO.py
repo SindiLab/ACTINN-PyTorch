@@ -4,12 +4,11 @@ import scanpy as sc
 from torch.utils.data import DataLoader
 
 def Scanpy_IO(file_path:str, test_no_valid:bool = False, batchSize:int = 128, workers:int = 12, log:bool = False, 
-              log_base:int = None, log_method: str ='scanpy', verbose = 0, raw_X=True):
+              log_base:int = None, log_method: str ='scanpy', verbose = 0, ):
     """
     Reading in H5AD files that are AnnData object (from Scanpy or Seurat)
     
-    Params
-    ------
+    INPUTS:
         file_path -> absolute path to the .h5ad file 
         test_or_valid -> boolean to check for test if no validation set is available
         batchSize -> batch size to be used for the PT dataloader
@@ -19,18 +18,13 @@ def Scanpy_IO(file_path:str, test_no_valid:bool = False, batchSize:int = 128, wo
         log_method -> if we want to take the log using scanpy or PyTorch
         verbose -> hounding out much printing the code does (not fully used yet)
     
-    Returns
-    -------
+    RETURN:
         train_data_loader-> training data loader consisting of the data (at batch[0]) and labels (at batch[1])
         test_data_loader-> testing data loader consisting of the data (at batch[0]) and labels (at batch[1])
     
     """
     print("==> Reading in Scanpy/Seurat AnnData")
     adata = sc.read(file_path);
-    
-    if raw_X:
-        print("    -> READING adata.raw.X instead!")
-        adata.X = adata.raw.X
     
     if log and log_method == 'scanpy':
         print("    -> Doing log(x+1) transformation with Scanpy")
@@ -118,8 +112,7 @@ def ScanpyObj_IO(obj, test_no_valid:bool = False, batchSize:int = 128, workers:i
     
     * The redundency is due to ease of readibility of new users *
     
-    Params
-    ------
+    INPUTS:
         file_path -> absolute path to the .h5ad file 
         test_or_valid -> boolean to check for test if no validation set is available
         batchSize -> batch size to be used for the PT dataloader
@@ -129,8 +122,7 @@ def ScanpyObj_IO(obj, test_no_valid:bool = False, batchSize:int = 128, workers:i
         log_method -> if we want to take the log using scanpy or PyTorch
         verbose -> hounding out much printing the code does (not fully used yet)
     
-    Returns
-    -------
+    RETURN:
         train_data_loader-> training data loader consisting of the data (at batch[0]) and labels (at batch[1])
         test_data_loader-> testing data loader consisting of the data (at batch[0]) and labels (at batch[1])
     

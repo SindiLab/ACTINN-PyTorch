@@ -4,7 +4,7 @@ import scanpy as sc
 from torch.utils.data import DataLoader
 
 def ScanpyObj_IO(obj, test_no_valid:bool = False, batchSize:int = 128, workers:int = 12, log:bool = False, 
-              log_base:int = None, log_method: str ='scanpy', verbose = 0, raw_X=True, split_number:int=None):
+              log_base:int = None, log_method: str ='scanpy', verbose = 0, ):
     
     """
     The same function as above, except taking in an AnnData object (from Scanpy or Seurat) and not a path
@@ -29,29 +29,19 @@ def ScanpyObj_IO(obj, test_no_valid:bool = False, batchSize:int = 128, workers:i
     print("==> Validating Scanpy/Seurat Object")
     adata = obj;
     
-    if raw_X:
-        print("    -> READING adata.raw.X instead!")
-        adata.X = adata.raw.X
-    
     if log and log_method == 'scanpy':
         print("    -> Doing log(x+1) transformation with Scanpy")
         sc.pp.log1p(adata, base=log_base)
         
     print("    -> Splitting Train and Validation Data")
-    
-    if split_number != None:
-        specific_split = f"Split_{split_number}"
-    else:
-        specific_split = "split"
-    
     # train
-    train_adata = adata[adata.obs[specific_split].isin(['train'])]
+    train_adata = adata[adata.obs['split'].isin(['train'])]
     # validation or test set
     if test_no_valid:
-        valid_adata = adata[adata.obs[specific_split].isin(['test'])]
+        valid_adata = adata[adata.obs['split'].isin(['test'])]
         
     else:
-        valid_adata = adata[adata.obs[specific_split].isin(['valid'])]
+        valid_adata = adata[adata.obs['split'].isin(['valid'])]
 
     # turn the cluster numbers into labels
     print("==> Using cluster info for generating train and validation labels")
