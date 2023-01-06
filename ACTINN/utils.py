@@ -1,7 +1,9 @@
 # std libs
 import os
+import pickle
 import numpy as np
-from sklearn.metrics import f1_score
+from prettytable import PrettyTable
+from sklearn.metrics import f1_score, accuracy_score
 from sklearn.metrics import classification_report as class_rep
 
 
@@ -100,7 +102,7 @@ def evaluate_classifier(valid_data_loader, cf_model,
             data, labels = sample;
             data = data.to(device)
             labels = labels.to(device)
-            outputs = cf_model(data)
+            outputs = cf_model(data.float())
             _, predicted = torch.max(outputs.squeeze(), 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -112,7 +114,54 @@ def evaluate_classifier(valid_data_loader, cf_model,
     # calculating the precision/recall based multi-label F1 score
     macro_score = f1_score(y_true, y_pred, average = 'macro' )
     w_score = f1_score(y_true, y_pred,average = 'weighted' )
+    traditional_accuracy = accuracy_score(y_true, y_pred)
     print(f'    -> Non-Weighted F1 Score on validation set: {macro_score:4.4f} ' )
     print(f'    -> Weighted F1 Score on validation set: {w_score:4.4f} ' )
     if classification_report:
         print(class_rep(y_true,y_pred))
+        
+    return macro_score, w_score, traditional_accuracy
+        
+        
+def detailed_count_parameters(model):
+    table = PrettyTable(["Modules", "Parameters"])
+    total_params = 0
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad: continue
+        params = parameter.numel()
+        table.add_row([name, params])
+        total_params+=params
+    print(table)
+    print(f"Total Trainable Params: {total_params}")
+    return total_params
+
+def count_parameters(model):
+    """ Count the total number of parameters in a model
+    
+    Params
+    ------
+        model -> a pytorch model which will be initilized with xavier weights
+
+    Returns
+    -------
+        the number of *trainable* parameters in a model
+    """
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+    
+  
+
+def Pickler(data, filename):
+
+    outfile = open(filename, 'wb+')
+    # source, destination
+    pickle.dump(data, outfile)                     
+    outfile.close()
+
+    
+
+def Unpickler(filename):
+    infile = open(filename, 'rb+') 
+    return_file = pickle.load(infile);
+    infile.close()
+
+    return return_file
