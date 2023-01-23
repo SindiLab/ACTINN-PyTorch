@@ -133,21 +133,28 @@ actinn.eval();
 
 ## Citation
 
-Please cite our repository if it was useful for your research:
+If this implementation was useful for your research, please cite our paper (in which we introduce this implementaton):
 
 ```
-@misc{Heydari2020,
-  author = {Heydari, A. Ali},
-  title = {PyTorch implementation of ACTINN},
-  year = {2020},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  howpublished = {\url{https://github.com/SindiLab/ACTINN-PyTorch}},
-}
+@article{HeydariEtAl,
+author = {Heydari, A. Ali and Davalos, Oscar A and Zhao, Lihong and Hoyer, Katrina K and Sindi, Suzanne S},
+date-added = {2023-01-23 12:50:22 -0800},
+date-modified = {2023-01-23 12:50:22 -0800},
+doi = {10.1093/bioinformatics/btac095},
+eprint = {https://academic.oup.com/bioinformatics/article-pdf/38/8/2194/43370117/btac095\_supplementary\_data.pdf},
+issn = {1367-4803},
+journal = {Bioinformatics},
+month = {02},
+number = {8},
+pages = {2194-2201},
+title = {{ACTIVA: realistic single-cell RNA-seq generation with automatic cell-type identification using introspective variational autoencoders}},
+url = {https://doi.org/10.1093/bioinformatics/btac095},
+volume = {38},
+year = {2022},
+bdsk-url-1 = {https://doi.org/10.1093/bioinformatics/btac095}}
 ```
 
 and the original paper:
-
 ```
 @article{10.1093/bioinformatics/btz592,
     author = {Ma, Feiyang and Pellegrini, Matteo},
